@@ -43,3 +43,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Rust build artifacts
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Android native libraries (built by Rust)
+android/app/src/main/jniLibs/
+
+# iOS/macOS native libraries
+ios/Frameworks/
+macos/Frameworks/
