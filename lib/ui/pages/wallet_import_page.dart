@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 import '../../services/askar_ffi.dart';
+import '../../services/credential_verifier.dart';
+import '../../models/verification_result.dart';
 
 class WalletImportPage extends StatefulWidget {
   const WalletImportPage({super.key});
@@ -412,6 +416,22 @@ class _WalletImportPageState extends State<WalletImportPage> {
       groupedEntries[category]!.add(entry as Map<String, dynamic>);
     }
 
+    // Sort categories with 'credential' first, then alphabetically
+    final sortedCategories = groupedEntries.keys.toList()
+      ..sort((a, b) {
+        // Put 'credential' or 'credentials' at the top
+        if (a.toLowerCase() == 'credential' ||
+            a.toLowerCase() == 'credentials') {
+          return -1;
+        }
+        if (b.toLowerCase() == 'credential' ||
+            b.toLowerCase() == 'credentials') {
+          return 1;
+        }
+        // Then sort alphabetically
+        return a.toLowerCase().compareTo(b.toLowerCase());
+      });
+
     return Dialog(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
@@ -462,9 +482,8 @@ class _WalletImportPageState extends State<WalletImportPage> {
                     )
                   : ListView(
                       padding: const EdgeInsets.all(16),
-                      children: groupedEntries.entries.map((categoryGroup) {
-                        final category = categoryGroup.key;
-                        final categoryEntries = categoryGroup.value;
+                      children: sortedCategories.map((category) {
+                        final categoryEntries = groupedEntries[category]!;
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -557,94 +576,7 @@ class _WalletImportPageState extends State<WalletImportPage> {
   ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.info_outline),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                entry['name'] ?? 'Entry Details',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow('Category', entry['category'] ?? 'N/A'),
-              _buildDetailRow('Name', entry['name'] ?? 'N/A'),
-              const Divider(),
-              const Text(
-                'Value:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: SelectableText(
-                  entry['value']?.toString() ?? 'N/A',
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
-              ),
-              if (entry['tags'] != null &&
-                  (entry['tags'] as List).isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'Tags:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: (entry['tags'] as List).map((tag) {
-                    return Chip(
-                      label: Text(
-                        tag.toString(),
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(child: SelectableText(value)),
-        ],
-      ),
+      builder: (context) => _EntryDetailsDialog(entry: entry),
     );
   }
 
@@ -855,6 +787,552 @@ class _WalletImportPageState extends State<WalletImportPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Dialog widget for displaying credential details and verification
+class _EntryDetailsDialog extends StatefulWidget {
+  final Map<String, dynamic> entry;
+
+  const _EntryDetailsDialog({required this.entry});
+
+  @override
+  State<_EntryDetailsDialog> createState() => _EntryDetailsDialogState();
+}
+
+class _EntryDetailsDialogState extends State<_EntryDetailsDialog> {
+  VerificationResult? _verificationResult;
+  bool _isVerifying = false;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verifyCredential() async {
+    setState(() {
+      _isVerifying = true;
+      _verificationResult = null;
+    });
+
+    try {
+      final value = widget.entry['value'];
+      if (value == null) {
+        setState(() {
+          _verificationResult = VerificationResult.error(
+            'No credential data found',
+          );
+        });
+        return;
+      }
+
+      final result = await CredentialVerifier.verify(value);
+      setState(() {
+        _verificationResult = result;
+      });
+
+      // Auto-scroll to results after a brief delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && _scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _verificationResult = VerificationResult.error('Failed to verify: $e');
+      });
+    } finally {
+      setState(() {
+        _isVerifying = false;
+      });
+    }
+  }
+
+  Future<void> _copyJsonToClipboard() async {
+    try {
+      final value = widget.entry['value'];
+      if (value == null) {
+        _showSnackBar('No data to copy', isError: true);
+        return;
+      }
+
+      String jsonString;
+      if (value is String) {
+        // Already a string, try to parse and pretty-print it
+        try {
+          final parsed = jsonDecode(value);
+          jsonString = const JsonEncoder.withIndent('  ').convert(parsed);
+        } catch (e) {
+          // If parsing fails, use as-is
+          jsonString = value;
+        }
+      } else if (value is Map || value is List) {
+        // Convert to pretty JSON
+        jsonString = const JsonEncoder.withIndent('  ').convert(value);
+      } else {
+        jsonString = value.toString();
+      }
+
+      await Clipboard.setData(ClipboardData(text: jsonString));
+      _showSnackBar('JSON copied to clipboard!');
+    } catch (e) {
+      _showSnackBar('Failed to copy: $e', isError: true);
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final category = widget.entry['category'] ?? 'uncategorized';
+    final name = widget.entry['name'] ?? 'Entry Details';
+
+    return AlertDialog(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(_getCategoryIcon(category)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  category.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(name, style: const TextStyle(fontSize: 16)),
+        ],
+      ),
+      content: SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDetailRow('Category', widget.entry['category'] ?? 'N/A'),
+            _buildDetailRow('Name', widget.entry['name'] ?? 'N/A'),
+            const Divider(),
+            const Text('Value:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SelectableText(
+                widget.entry['value']?.toString() ?? 'N/A',
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+            if (widget.entry['tags'] != null &&
+                (widget.entry['tags'] as List).isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Tags:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: (widget.entry['tags'] as List).map((tag) {
+                  return Chip(
+                    label: Text(
+                      tag.toString(),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  );
+                }).toList(),
+              ),
+            ],
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                onPressed: _isVerifying ? null : _verifyCredential,
+                icon: _isVerifying
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.verified_user),
+                label: Text(
+                  _isVerifying ? 'Verifying...' : 'Verify Credential',
+                ),
+              ),
+            ),
+            if (_verificationResult != null) ...[
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Colors.grey.shade300, width: 2),
+                    bottom: BorderSide(color: Colors.grey.shade300, width: 2),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.verified, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'VERIFICATION RESULTS',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildVerificationResults(),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton.icon(
+          onPressed: _copyJsonToClipboard,
+          icon: const Icon(Icons.copy),
+          label: const Text('Copy JSON'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerificationResults() {
+    final result = _verificationResult!;
+    final stats = result.statistics;
+    final hasCriticalIssues = stats['failed']! > 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: _getStatusColor(result.overallStatus),
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Prominent Overall Verdict
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: _getStatusColor(result.overallStatus).withOpacity(0.15),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(10),
+                topRight: Radius.circular(10),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  result.statusIconData,
+                  color: _getStatusColor(result.overallStatus),
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  result.statusText.toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: _getStatusColor(result.overallStatus),
+                    fontSize: 24,
+                    letterSpacing: 2.0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(
+                      result.overallStatus,
+                    ).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _getVerdictDescription(result.overallStatus),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _getStatusColor(result.overallStatus),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (result.summary.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    result.summary,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Quick Summary Statistics
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            decoration: BoxDecoration(color: Colors.grey.shade50),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatChip('✓', stats['passed']!, Colors.green),
+                if (stats['warning']! > 0)
+                  _buildStatChip('⚠', stats['warning']!, Colors.orange),
+                if (stats['failed']! > 0)
+                  _buildStatChip('✗', stats['failed']!, Colors.red),
+                if (stats['skipped']! > 0)
+                  _buildStatChip('○', stats['skipped']!, Colors.grey),
+              ],
+            ),
+          ),
+          // Critical Issues First (if any)
+          if (hasCriticalIssues) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              color: Colors.red.shade50,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.error, color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Critical Issues Found:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...result.checks
+                      .where((c) => c.status == CheckStatus.failed)
+                      .map(
+                        (check) => Padding(
+                          padding: const EdgeInsets.only(left: 28, top: 4),
+                          child: Text(
+                            '• ${check.name}: ${check.message}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.red.shade900,
+                            ),
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+            ),
+          ],
+          // Collapsible Detailed Checks
+          ExpansionTile(
+            title: const Text(
+              'View Detailed Checks',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
+            initiallyExpanded: false,
+            children: result.checksByCategory.entries.map((categoryEntry) {
+              return ExpansionTile(
+                title: Text(
+                  categoryEntry.key,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                tilePadding: const EdgeInsets.only(left: 32, right: 16),
+                initiallyExpanded: false,
+                children: categoryEntry.value.map((check) {
+                  return ListTile(
+                    dense: true,
+                    leading: Text(
+                      check.icon,
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: _getCheckStatusColor(check.status),
+                      ),
+                    ),
+                    title: Text(check.name),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(check.message),
+                        if (check.details != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            check.details!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatChip(String icon, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: TextStyle(color: color, fontSize: 14)),
+          const SizedBox(width: 4),
+          Text(
+            count.toString(),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(VerificationStatus status) {
+    switch (status) {
+      case VerificationStatus.valid:
+        return Colors.green;
+      case VerificationStatus.warning:
+        return Colors.orange;
+      case VerificationStatus.invalid:
+        return Colors.red;
+    }
+  }
+
+  String _getVerdictDescription(VerificationStatus status) {
+    switch (status) {
+      case VerificationStatus.valid:
+        return '✓ Credential is structurally valid';
+      case VerificationStatus.warning:
+        return '⚠ Valid but has warnings';
+      case VerificationStatus.invalid:
+        return '✗ Credential has critical issues';
+    }
+  }
+
+  Color _getCheckStatusColor(CheckStatus status) {
+    switch (status) {
+      case CheckStatus.passed:
+        return Colors.green;
+      case CheckStatus.warning:
+        return Colors.orange;
+      case CheckStatus.failed:
+        return Colors.red;
+      case CheckStatus.skipped:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'credentials':
+      case 'credential':
+        return Icons.card_membership;
+      case 'connections':
+      case 'connection':
+        return Icons.people;
+      case 'dids':
+      case 'did':
+        return Icons.fingerprint;
+      case 'schemas':
+      case 'schema':
+        return Icons.schema;
+      case 'keys':
+      case 'key':
+        return Icons.vpn_key;
+      default:
+        return Icons.label;
+    }
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(child: SelectableText(value)),
+        ],
       ),
     );
   }

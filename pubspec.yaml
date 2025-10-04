@@ -38,6 +38,11 @@ dependencies:
   path_provider: ^2.1.5
   ffi: ^2.1.4
   path: ^1.9.0
+  
+  # Verification dependencies
+  crypto: ^3.0.3      # For cryptographic operations
+  convert: ^3.1.1     # For base64/hex encoding
+  intl: ^0.19.0       # For date parsing and formatting
 
 dev_dependencies:
   flutter_test:
