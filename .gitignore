@@ -56,3 +56,6 @@ android/app/src/main/jniLibs/
 # iOS/macOS native libraries
 ios/Frameworks/
 macos/Frameworks/
+
+# Large binary files
+ios/libs/libffi_bridge_sim.a
