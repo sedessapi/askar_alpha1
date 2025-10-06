@@ -78,7 +78,8 @@ class TrustBundleProvider with ChangeNotifier {
       print('TrustBundleProvider: Starting preview bundle...');
       final previewData = await _ingestionService.previewBundle();
       _bundlePreview = previewData;
-      _rawBundle = previewData['rawBundle'] as Map<String, dynamic>?; // Store raw bundle
+      _rawBundle =
+          previewData['rawBundle'] as Map<String, dynamic>?; // Store raw bundle
       print('TrustBundleProvider: Preview successful - ${_bundlePreview}');
       _isHealthy = true;
     } catch (e) {
@@ -107,7 +108,8 @@ class TrustBundleProvider with ChangeNotifier {
     notifyListeners();
 
     await _ingestionSubscription?.cancel();
-    _ingestionSubscription = _ingestionService.savePreviewedBundle(_rawBundle!).listen(
+    _ingestionSubscription =
+        _ingestionService.savePreviewedBundle(_rawBundle!).listen(
       (progress) {
         _progressMessage = progress.message;
         if (progress.total > 0) {

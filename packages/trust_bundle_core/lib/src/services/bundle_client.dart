@@ -20,7 +20,7 @@ class BundleClient {
 
   Future<Map<String, dynamic>> fetchBundle() async {
     final response = await _client.get(Uri.parse('$_baseUrl/bundle'));
-    
+
     if (response.statusCode == 200) {
       return json.decode(response.body) as Map<String, dynamic>;
     } else {

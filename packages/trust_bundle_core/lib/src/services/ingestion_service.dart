@@ -48,7 +48,7 @@ class IngestionService {
   /// Fetch and preview the bundle without saving to database
   Future<Map<String, dynamic>> previewBundle() async {
     final bundle = await _bundleClient.fetchBundle();
-    
+
     // Verify the bundle
     if (!_manifestVerifier.verify(bundle)) {
       throw Exception('Manifest signature verification failed');
@@ -56,10 +56,14 @@ class IngestionService {
 
     // Extract metadata - handle nested artifacts structure
     final artifacts = bundle['artifacts'] as Map<String, dynamic>?;
-    final schemas = (artifacts?['schemas'] as Map<String, dynamic>?)?.values.toList() ?? [];
-    final credDefs = (artifacts?['cred_defs'] as Map<String, dynamic>?)?.values.toList() ?? [];
+    final schemas =
+        (artifacts?['schemas'] as Map<String, dynamic>?)?.values.toList() ?? [];
+    final credDefs =
+        (artifacts?['cred_defs'] as Map<String, dynamic>?)?.values.toList() ??
+        [];
     final bundleVersion = bundle['bundle_version']?.toString() ?? 'unknown';
     final network = bundle['network'] as String? ?? 'unknown';
+    final trustedIssuers = (bundle['trusted_issuers'] as List?) ?? [];
 
     return {
       'bundleVersion': bundleVersion,
@@ -68,6 +72,7 @@ class IngestionService {
       'credDefCount': credDefs.length,
       'schemas': schemas,
       'credDefs': credDefs,
+      'trustedIssuers': trustedIssuers,
       'generatedAt': bundle['generated_at'],
       'expiresAt': bundle['expires_at'],
       'rawBundle': bundle, // Include raw bundle for saving
@@ -75,7 +80,9 @@ class IngestionService {
   }
 
   /// Save an already-fetched and verified bundle to database
-  Stream<IngestionProgress> savePreviewedBundle(Map<String, dynamic> rawBundle) {
+  Stream<IngestionProgress> savePreviewedBundle(
+    Map<String, dynamic> rawBundle,
+  ) {
     final controller = StreamController<IngestionProgress>();
 
     Future<void> doSave() async {
@@ -86,9 +93,10 @@ class IngestionService {
             message: 'Preparing to save...',
           ),
         );
-        
+
         // Handle the actual bundle structure from the server
-        final bundleVersion = rawBundle['bundle_version']?.toString() ?? 'unknown';
+        final bundleVersion =
+            rawBundle['bundle_version']?.toString() ?? 'unknown';
         final network = rawBundle['network'] as String? ?? 'unknown';
         final bundleId = '${network}_v${bundleVersion}';
         final bundleContent = json.encode(rawBundle);
@@ -97,7 +105,7 @@ class IngestionService {
         final artifacts = rawBundle['artifacts'] as Map<String, dynamic>?;
         final schemasMap = artifacts?['schemas'] as Map<String, dynamic>?;
         final credDefsMap = artifacts?['cred_defs'] as Map<String, dynamic>?;
-        
+
         final schemas = schemasMap?.values.toList() ?? [];
         final credDefs = credDefsMap?.values.toList() ?? [];
         final totalItems = schemas.length + credDefs.length;
@@ -238,7 +246,7 @@ class IngestionService {
             message: 'Parsing bundle...',
           ),
         );
-        
+
         // Handle the actual bundle structure from the server
         final bundleVersion = bundle['bundle_version']?.toString() ?? 'unknown';
         final network = bundle['network'] as String? ?? 'unknown';
@@ -249,7 +257,7 @@ class IngestionService {
         final artifacts = bundle['artifacts'] as Map<String, dynamic>?;
         final schemasMap = artifacts?['schemas'] as Map<String, dynamic>?;
         final credDefsMap = artifacts?['cred_defs'] as Map<String, dynamic>?;
-        
+
         final schemas = schemasMap?.values.toList() ?? [];
         final credDefs = credDefsMap?.values.toList() ?? [];
         final totalItems = schemas.length + credDefs.length;

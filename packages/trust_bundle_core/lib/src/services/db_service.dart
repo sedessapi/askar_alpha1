@@ -12,6 +12,19 @@ class DbService {
     isar = await Isar.open(
       [BundleRecSchema, CredDefRecSchema, SchemaRecSchema],
       directory: dir.path,
+      inspector: true, // Enable inspector
     );
+  }
+
+  /// Get the Isar Inspector URL (only works in debug mode)
+  String? getInspectorUrl() {
+    try {
+      // The inspector URL is printed to console, but we can construct it
+      // from the Isar instance name. In debug mode, Isar automatically
+      // starts the inspector server.
+      return 'Check terminal for Isar Inspector URL';
+    } catch (e) {
+      return null;
+    }
   }
 }
