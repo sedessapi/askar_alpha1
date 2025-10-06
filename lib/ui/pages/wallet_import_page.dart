@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
 
 import '../../services/askar_ffi.dart';
 import '../../services/credential_verifier.dart';
+import '../../services/app_settings_provider.dart';
 import '../../models/verification_result.dart';
 
 class WalletImportPage extends StatefulWidget {
@@ -219,6 +221,8 @@ class _WalletImportPageState extends State<WalletImportPage> {
   }
 
   Widget _buildWalletSection() {
+    final appSettings = Provider.of<AppSettingsProvider>(context);
+    
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -236,6 +240,41 @@ class _WalletImportPageState extends State<WalletImportPage> {
               ],
             ),
             const SizedBox(height: 16),
+            
+            // Server status indicator
+            Row(
+              children: [
+                const Text(
+                  'Network Status:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: appSettings.airplaneMode 
+                        ? Colors.orange 
+                        : Colors.green,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    appSettings.airplaneMode 
+                        ? 'Offline' 
+                        : 'Online',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
             TextField(
               controller: _walletNameCtrl,
               decoration: const InputDecoration(

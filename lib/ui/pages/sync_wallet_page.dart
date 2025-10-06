@@ -4,9 +4,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 
 import '../../services/askar_export_client.dart';
 import '../../services/askar_ffi.dart';
+import '../../services/app_settings_provider.dart';
 
 class SyncWalletPage extends StatefulWidget {
   const SyncWalletPage({super.key});
@@ -234,7 +236,6 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
       );
 
       if (importResult['success'] == true) {
-        final imported = importResult['imported'] as int? ?? 0;
         final failed = importResult['failed'] as int? ?? 0;
 
         setState(() {
@@ -250,11 +251,11 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
           await tempFile.delete();
         } catch (_) {}
 
-        // Show success snackbar
+        // Show success snackbar with actual credential count
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Successfully synced $imported credentials!'),
+              content: Text('Successfully synced $_totalCredentialsInWallet credentials!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -279,6 +280,8 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
 
   @override
   Widget build(BuildContext context) {
+    final appSettings = Provider.of<AppSettingsProvider>(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sync Wallet'),
@@ -335,11 +338,15 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _isHealthy ? Colors.green : Colors.grey,
+                    color: appSettings.airplaneMode 
+                        ? Colors.orange 
+                        : (_isHealthy ? Colors.green : Colors.grey),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _isHealthy ? 'Online' : 'Checking...',
+                    appSettings.airplaneMode 
+                        ? 'Offline' 
+                        : (_isHealthy ? 'Online' : 'Checking...'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,

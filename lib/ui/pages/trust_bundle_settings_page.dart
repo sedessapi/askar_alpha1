@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../services/trust_bundle_provider.dart';
+import '../../services/app_settings_provider.dart';
 
 class TrustBundleSettingsPage extends StatefulWidget {
   const TrustBundleSettingsPage({super.key});
@@ -56,6 +57,8 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final appSettings = Provider.of<AppSettingsProvider>(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sync Bundle'),
@@ -65,7 +68,7 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              _buildUrlCard(provider),
+              _buildUrlCard(provider, appSettings),
               const SizedBox(height: 16),
               if (provider.previewError != null) ...[
                 _buildErrorCard(provider.previewError!),
@@ -150,7 +153,7 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
     );
   }
 
-  Widget _buildUrlCard(TrustBundleProvider provider) {
+  Widget _buildUrlCard(TrustBundleProvider provider, AppSettingsProvider appSettings) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -177,19 +180,23 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: provider.isHealthy == true
-                        ? Colors.green
-                        : provider.isHealthy == false
-                            ? Colors.red
-                            : Colors.grey,
+                    color: appSettings.airplaneMode
+                        ? Colors.orange
+                        : (provider.isHealthy == true
+                            ? Colors.green
+                            : provider.isHealthy == false
+                                ? Colors.red
+                                : Colors.grey),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    provider.isHealthy == true
-                        ? 'Online'
-                        : provider.isHealthy == false
-                            ? 'Offline'
-                            : 'Checking...',
+                    appSettings.airplaneMode
+                        ? 'Offline'
+                        : (provider.isHealthy == true
+                            ? 'Online'
+                            : provider.isHealthy == false
+                                ? 'Offline'
+                                : 'Checking...'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,

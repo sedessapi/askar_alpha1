@@ -25,7 +25,7 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
 
   String? _walletPath;
   final TextEditingController _walletNameCtrl = TextEditingController(
-    text: 'my_wallet',
+    text: 'synced_wallet',
   );
   final TextEditingController _walletKeyCtrl = TextEditingController(
     text: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
