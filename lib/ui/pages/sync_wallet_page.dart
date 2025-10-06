@@ -291,39 +291,6 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            // Info card
-            Card(
-              color: Colors.blue.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text(
-                          'Automatic Wallet Sync',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Downloads wallet data from ACA-Py and automatically imports to your local Askar wallet.',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
             // Server health indicator
             Row(
               children: [

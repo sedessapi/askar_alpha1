@@ -181,6 +181,8 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
   }
 
   Widget _buildWalletForm() {
+    final appSettings = Provider.of<AppSettingsProvider>(context);
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -189,6 +191,40 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
           Text(
             'Open Wallet',
             style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 24),
+          
+          // Server status indicator
+          Row(
+            children: [
+              const Text(
+                'Server Status:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: appSettings.airplaneMode 
+                      ? Colors.orange 
+                      : Colors.green,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  appSettings.airplaneMode 
+                      ? 'Offline' 
+                      : 'Online',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           TextField(
