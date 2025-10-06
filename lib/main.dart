@@ -1,4 +1,5 @@
 import 'package:askar_alpha/services/trust_bundle_provider.dart';
+import 'package:askar_alpha/services/enhanced_verification_service.dart';
 import 'package:askar_alpha/ui/navigation/app_navigation.dart';
 import 'package:askar_alpha/ui/theme/app_theme.dart';
 import 'package:askar_alpha/ui/theme/theme_notifier.dart';
@@ -26,6 +27,15 @@ void main() async {
     manifestVerifier: manifestVerifier,
   );
 
+  // Initialize VerifierService for trust bundle verification
+  final verifierService = VerifierService(dbService);
+  
+  // Initialize EnhancedVerificationService (without ACA-Py for now)
+  final enhancedVerificationService = EnhancedVerificationService(
+    verifierService: verifierService,
+    acaPyClient: null, // TODO: Initialize ACA-Py client if needed
+  );
+
   runApp(
     MultiProvider(
       providers: [
@@ -36,6 +46,9 @@ void main() async {
             dbService: dbService,
             bundleClient: bundleClient,
           ),
+        ),
+        Provider<EnhancedVerificationService>(
+          create: (_) => enhancedVerificationService,
         ),
       ],
       child: const AskarAlphaApp(),

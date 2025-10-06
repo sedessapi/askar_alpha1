@@ -34,7 +34,7 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trust Bundle'),
+        title: const Text('Sync Bundle'),
       ),
       body: Consumer<TrustBundleProvider>(
         builder: (context, provider, child) {
@@ -47,9 +47,14 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
                 _buildErrorCard(provider.previewError!),
                 const SizedBox(height: 16),
               ],
-              if (provider.bundlePreview != null) ...[
-                _buildPreviewCard(provider),
+              // Only show the database contents card if there is data in the database
+              if (provider.lastSynced != null ||
+                  provider.schemaCount > 0 ||
+                  provider.credDefCount > 0) ...[
+                _buildStatusCard(provider),
                 const SizedBox(height: 16),
+              ],
+              if (provider.bundleData != null) ...[
                 _buildExpandableTrustedIssuersCard(provider),
                 const SizedBox(height: 16),
                 _buildExpandableSchemasCard(provider),
@@ -57,8 +62,6 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
                 _buildExpandableCredDefsCard(provider),
                 const SizedBox(height: 16),
               ],
-              _buildStatusCard(provider),
-              const SizedBox(height: 16),
               if (provider.isLoading)
                 Column(
                   children: [
@@ -72,32 +75,18 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
                     const SizedBox(height: 16),
                   ],
                 ),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed:
-                          provider.isLoading ? null : provider.previewBundle,
-                      icon: const Icon(Icons.preview),
-                      label: const Text('Preview Bundle'),
-                    ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: provider.isLoading ? null : provider.syncAndSaveBundle,
+                  icon: const Icon(Icons.cloud_download),
+                  label: const Text('Sync Bundle'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed:
-                          provider.isLoading || provider.bundlePreview == null
-                              ? null
-                              : provider.syncBundle,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Save to Database'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           );
@@ -132,68 +121,6 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
             Text(error, style: const TextStyle(color: Colors.red)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPreviewCard(TrustBundleProvider provider) {
-    final preview = provider.bundlePreview!;
-    return Card(
-      color: Colors.blue.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: const [
-                Icon(Icons.preview, color: Colors.blue),
-                SizedBox(width: 8),
-                Text(
-                  'Bundle Preview',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildPreviewRow('Network', preview['network'] ?? 'Unknown'),
-            _buildPreviewRow(
-                'Version', preview['bundleVersion']?.toString() ?? 'Unknown'),
-            _buildPreviewRow(
-                'Schemas', preview['schemaCount']?.toString() ?? '0'),
-            _buildPreviewRow('Credential Definitions',
-                preview['credDefCount']?.toString() ?? '0'),
-            if (preview['generatedAt'] != null)
-              _buildPreviewRow('Generated', preview['generatedAt']),
-            if (preview['expiresAt'] != null)
-              _buildPreviewRow('Expires', preview['expiresAt']),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPreviewRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(
-            child: Text(value),
-          ),
-        ],
       ),
     );
   }
@@ -313,8 +240,8 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
   }
 
   Widget _buildExpandableTrustedIssuersCard(TrustBundleProvider provider) {
-    final preview = provider.bundlePreview!;
-    final trustedIssuers = (preview['trustedIssuers'] as List?) ?? [];
+    final bundleData = provider.bundleData!;
+    final trustedIssuers = (bundleData['trusted_issuers'] as List?) ?? [];
 
     return Card(
       child: ExpansionTile(
@@ -393,8 +320,10 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
   }
 
   Widget _buildExpandableSchemasCard(TrustBundleProvider provider) {
-    final preview = provider.bundlePreview!;
-    final schemas = (preview['schemas'] as List?) ?? [];
+    final bundleData = provider.bundleData!;
+    final artifacts = bundleData['artifacts'] as Map<String, dynamic>?;
+    final schemasMap = artifacts?['schemas'] as Map<String, dynamic>?;
+    final schemas = schemasMap?.values.toList() ?? [];
 
     return Card(
       child: ExpansionTile(
@@ -458,8 +387,10 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
   }
 
   Widget _buildExpandableCredDefsCard(TrustBundleProvider provider) {
-    final preview = provider.bundlePreview!;
-    final credDefs = (preview['credDefs'] as List?) ?? [];
+    final bundleData = provider.bundleData!;
+    final artifacts = bundleData['artifacts'] as Map<String, dynamic>?;
+    final credDefsMap = artifacts?['cred_defs'] as Map<String, dynamic>?;
+    final credDefs = credDefsMap?.values.toList() ?? [];
 
     return Card(
       child: ExpansionTile(

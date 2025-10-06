@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:askar_alpha/ui/pages/trust_bundle_settings_page.dart';
+import 'package:askar_alpha/ui/pages/verify_local_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -27,7 +28,7 @@ class HomePage extends StatelessWidget {
                 _buildMiniAppCard(
                   context,
                   icon: Icons.security,
-                  title: 'Trust Bundle',
+                  title: 'Sync Bundle',
                   description: 'Manage trust settings',
                   color: Colors.purple,
                   onTap: () {
@@ -42,7 +43,7 @@ class HomePage extends StatelessWidget {
                 _buildMiniAppCard(
                   context,
                   icon: Icons.qr_code_scanner,
-                  title: 'Scanner',
+                  title: 'Scan',
                   description: 'Scan QR codes',
                   color: Colors.blue,
                   onTap: () {
@@ -52,11 +53,16 @@ class HomePage extends StatelessWidget {
                 _buildMiniAppCard(
                   context,
                   icon: Icons.verified_user,
-                  title: 'Verifier',
+                  title: 'Verify Local',
                   description: 'Verify credentials',
                   color: Colors.green,
                   onTap: () {
-                    // TODO: Navigate to verifier mini-app
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const VerifyLocalPage(),
+                      ),
+                    );
                   },
                 ),
                 // Add more mini-apps here

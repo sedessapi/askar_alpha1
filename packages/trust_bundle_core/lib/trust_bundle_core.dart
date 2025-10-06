@@ -7,3 +7,4 @@ export 'src/models/schema_rec.dart';
 export 'src/services/bundle_client.dart';
 export 'src/services/db_service.dart';
 export 'src/services/ingestion_service.dart';
+export 'src/services/verifier_service.dart';

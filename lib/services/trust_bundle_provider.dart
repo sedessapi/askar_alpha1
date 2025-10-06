@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:trust_bundle_core/trust_bundle_core.dart';
@@ -29,6 +30,9 @@ class TrustBundleProvider with ChangeNotifier {
   String _progressMessage = '';
   double _progressValue = 0.0;
 
+  // Bundle data for viewing
+  Map<String, dynamic>? _bundleData;
+
   DateTime? get lastSynced => _lastSynced;
   int get schemaCount => _schemaCount;
   int get credDefCount => _credDefCount;
@@ -37,6 +41,7 @@ class TrustBundleProvider with ChangeNotifier {
   String get bundleUrl => _bundleUrl;
   String get progressMessage => _progressMessage;
   double get progressValue => _progressValue;
+  Map<String, dynamic>? get bundleData => _bundleData;
 
   Map<String, dynamic>? _bundlePreview;
   Map<String, dynamic>? get bundlePreview => _bundlePreview;
@@ -80,7 +85,7 @@ class TrustBundleProvider with ChangeNotifier {
       _bundlePreview = previewData;
       _rawBundle =
           previewData['rawBundle'] as Map<String, dynamic>?; // Store raw bundle
-      print('TrustBundleProvider: Preview successful - ${_bundlePreview}');
+      print('TrustBundleProvider: Preview successful - $_bundlePreview');
       _isHealthy = true;
     } catch (e) {
       print('TrustBundleProvider: Preview failed - $e');
@@ -142,11 +147,63 @@ class TrustBundleProvider with ChangeNotifier {
     );
   }
 
+  /// Combined sync and save: downloads bundle and immediately saves to database
+  Future<void> syncAndSaveBundle() async {
+    _isLoading = true;
+    _bundlePreview = null;
+    _previewError = null;
+    _rawBundle = null;
+    _isHealthy = null;
+    _progressMessage = 'Downloading bundle...';
+    _progressValue = 0.0;
+    notifyListeners();
+
+    await _ingestionSubscription?.cancel();
+    _ingestionSubscription = _ingestionService.ingestBundle().listen(
+      (progress) {
+        _progressMessage = progress.message;
+        if (progress.total > 0) {
+          _progressValue = progress.current / progress.total;
+        } else {
+          _progressValue = 0;
+        }
+
+        if (progress.status == IngestionStatus.complete) {
+          _isHealthy = true;
+          _isLoading = false;
+          _updateCounts(); // Refresh counts after successful save
+        }
+        notifyListeners();
+      },
+      onError: (error) {
+        _progressMessage = 'Error: $error';
+        _progressValue = 1.0; // Show full bar in red
+        _isHealthy = false;
+        _isLoading = false;
+        _previewError = error.toString();
+        notifyListeners();
+      },
+      onDone: () {
+        if (_isLoading) {
+          _isLoading = false;
+          notifyListeners();
+        }
+      },
+    );
+  }
+
   Future<void> _updateCounts() async {
     // Get the first bundle record to find the last sync time.
     final bundle = await _dbService.isar.bundleRecs.get(1);
     if (bundle != null) {
       _lastSynced = bundle.lastUpdated;
+      // Parse and store bundle data for UI viewing
+      try {
+        _bundleData = json.decode(bundle.content);
+      } catch (e) {
+        print('Error parsing bundle content: $e');
+        _bundleData = null;
+      }
     }
     _schemaCount = await _dbService.isar.schemaRecs.count();
     _credDefCount = await _dbService.isar.credDefRecs.count();
