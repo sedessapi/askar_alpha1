@@ -59,6 +59,8 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
               ],
               _buildStatusCard(provider),
               const SizedBox(height: 16),
+              _buildDeveloperToolsCard(),
+              const SizedBox(height: 16),
               if (provider.isLoading)
                 Column(
                   children: [
@@ -285,28 +287,39 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
               'Credential Definitions',
               provider.credDefCount.toString(),
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeveloperToolsCard() {
+    return Card(
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               children: const [
-                Icon(Icons.bug_report, size: 16, color: Colors.orange),
+                Icon(Icons.bug_report, color: Colors.orange),
                 SizedBox(width: 8),
                 Text(
                   'Developer Tools',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.orange,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.orange.shade200),
               ),
@@ -320,7 +333,7 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
                           'Isar Inspector (Debug Mode)',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -328,26 +341,22 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'To inspect the database in detail:\n'
-                    '1. Check the terminal/console output\n'
-                    '2. Look for "ISAR CONNECT STARTED"\n'
-                    '3. Click the https://inspect.isar.dev/... URL\n'
-                    '4. Browse schemas, cred defs, and bundles',
+                    'Inspect the database in detail:\n'
+                    '• Check terminal for "ISAR CONNECT STARTED"\n'
+                    '• Click the https://inspect.isar.dev/... URL\n'
+                    '• Browse schemas, cred defs, and bundles live',
                     style: TextStyle(fontSize: 12, color: Colors.black87),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () {
                       _showIsarInspectorDialog(context);
                     },
-                    icon: const Icon(Icons.info_outline, size: 16),
-                    label: const Text('How to Access',
-                        style: TextStyle(fontSize: 12)),
+                    icon: const Icon(Icons.info_outline, size: 18),
+                    label: const Text('How to Access'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.orange,
                       side: BorderSide(color: Colors.orange.shade300),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
                     ),
                   ),
                 ],

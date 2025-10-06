@@ -5,6 +5,7 @@ import 'package:askar_alpha/ui/pages/home_page.dart';
 import 'package:askar_alpha/ui/pages/proofs_page.dart';
 import 'package:askar_alpha/ui/pages/scan_page.dart';
 import 'package:askar_alpha/ui/pages/settings_page.dart';
+import 'package:askar_alpha/ui/pages/trust_bundle_settings_page.dart';
 
 class AppNavigation extends StatefulWidget {
   const AppNavigation({super.key});
@@ -28,6 +29,23 @@ class _AppNavigationState extends State<AppNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Askar Alpha'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.security),
+            tooltip: 'Trust Bundle',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TrustBundleSettingsPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: _screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
