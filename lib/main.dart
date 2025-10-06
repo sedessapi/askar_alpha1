@@ -4,11 +4,14 @@ import 'package:askar_alpha/ui/theme/theme_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(ThemeMode.light),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeNotifier(ThemeMode.light)),
+      ],
       child: const AskarAlphaApp(),
     ),
   );
