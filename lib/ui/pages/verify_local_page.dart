@@ -261,6 +261,8 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
   }
 
   Widget _buildCredentialsList() {
+    final appSettings = Provider.of<AppSettingsProvider>(context);
+    
     if (_isLoading && _credentials.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -283,16 +285,58 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: _credentials.length,
-      itemBuilder: (context, index) {
-        final cred = _credentials[index];
-        final credId = cred['name'] as String? ?? 'credential_$index';
-        final verificationResult = _verificationResults[credId];
+    return Column(
+      children: [
+        // Server status indicator at the top
+        Container(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              const Text(
+                'Server Status:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: appSettings.airplaneMode 
+                      ? Colors.orange 
+                      : Colors.green,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  appSettings.airplaneMode 
+                      ? 'Offline' 
+                      : 'Online',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Credentials list
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            itemCount: _credentials.length,
+            itemBuilder: (context, index) {
+              final cred = _credentials[index];
+              final credId = cred['name'] as String? ?? 'credential_$index';
+              final verificationResult = _verificationResults[credId];
 
-        return _buildCredentialCard(credId, cred, verificationResult);
-      },
+              return _buildCredentialCard(credId, cred, verificationResult);
+            },
+          ),
+        ),
+      ],
     );
   }
 

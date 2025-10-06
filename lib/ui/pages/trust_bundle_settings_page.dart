@@ -68,6 +68,57 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
+              // Server status indicator (outside of card)
+              Row(
+                children: [
+                  const Text(
+                    'Server Status:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: appSettings.airplaneMode
+                          ? Colors.orange
+                          : (provider.isHealthy == true
+                              ? Colors.green
+                              : provider.isHealthy == false
+                                  ? Colors.red
+                                  : Colors.grey),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      appSettings.airplaneMode
+                          ? 'Offline'
+                          : (provider.isHealthy == true
+                              ? 'Online'
+                              : provider.isHealthy == false
+                                  ? 'Offline'
+                                  : 'Checking...'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (!provider.isLoading)
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () {
+                        provider.checkHealth();
+                      },
+                      tooltip: 'Recheck health',
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
               _buildUrlCard(provider, appSettings),
               const SizedBox(height: 16),
               if (provider.previewError != null) ...[
@@ -106,7 +157,9 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed:
-                      provider.isLoading ? null : provider.syncAndSaveBundle,
+                      (provider.isLoading || appSettings.airplaneMode) 
+                          ? null 
+                          : provider.syncAndSaveBundle,
                   icon: const Icon(Icons.cloud_download),
                   label: const Text('Sync Bundle'),
                   style: ElevatedButton.styleFrom(
@@ -164,58 +217,6 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
               'Endpoint',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 16),
-
-            // Server health indicator
-            Row(
-              children: [
-                const Text(
-                  'Server Status:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: appSettings.airplaneMode
-                        ? Colors.orange
-                        : (provider.isHealthy == true
-                            ? Colors.green
-                            : provider.isHealthy == false
-                                ? Colors.red
-                                : Colors.grey),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    appSettings.airplaneMode
-                        ? 'Offline'
-                        : (provider.isHealthy == true
-                            ? 'Online'
-                            : provider.isHealthy == false
-                                ? 'Offline'
-                                : 'Checking...'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                if (!provider.isLoading)
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () {
-                      provider.checkHealth();
-                    },
-                    tooltip: 'Recheck health',
-                  ),
-              ],
-            ),
-
             const SizedBox(height: 16),
             
             // Bundle URL field with paste button

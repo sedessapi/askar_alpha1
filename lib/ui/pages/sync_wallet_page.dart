@@ -406,7 +406,7 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
             SizedBox(
               height: 56,
               child: ElevatedButton.icon(
-                onPressed: _busy ? null : _syncWallet,
+                onPressed: (_busy || appSettings.airplaneMode) ? null : _syncWallet,
                 icon: _busy
                     ? const SizedBox(
                         width: 20,
