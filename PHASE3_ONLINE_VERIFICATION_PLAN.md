@@ -1,7 +1,7 @@
-# Phase 2: Online Verification with ACA-Py Backend
+# Phase 3: Online Verification with ACA-Py Backend
 
 **Project**: Askar Import - Trust Bundle Integration  
-**Phase**: 2.0 - Online Verification Implementation  
+**Phase**: 3.0 - Online Verification Implementation  
 **Date**: October 6, 2025  
 **Status**: Planning
 
@@ -9,7 +9,9 @@
 
 ## Executive Summary
 
-Phase 2 introduces **online verification** capabilities by integrating with the ACA-Py backend wallet. This enables real-time cryptographic verification, revocation checking, and full proof protocol support while maintaining offline fallback capabilities from Phase 1.
+Phase 3 introduces **online verification** capabilities by integrating with the ACA-Py backend wallet. This phase **enhances** the QR code verification system from Phase 2 by adding real-time cryptographic verification, revocation checking, and full proof protocol support when the device is online, while maintaining offline fallback capabilities from Phase 1.
+
+**Prerequisites**: Phase 2 (QR Code Verification) must be complete before starting Phase 3.
 
 **Key Decision**: Use **ACA-Py backend wallet** for online verification, not device FFI wallet.
 
@@ -228,7 +230,7 @@ Is airplane mode ON?
 
 ## Phase 2 Sub-Phases (Incremental Development)
 
-### **Phase 2.1: ACA-Py Backend Integration Foundation** 🏗️
+### **Phase 3.1: ACA-Py Backend Integration Foundation** 🏗️
 *Duration: 3-5 days*
 
 **Goal**: Establish connection to ACA-Py backend and basic API communication.
@@ -254,7 +256,7 @@ Is airplane mode ON?
 
 ---
 
-### **Phase 2.2: Basic Credential Verification via ACA-Py** 🔍
+### **Phase 3.2: Basic Credential Verification via ACA-Py** 🔍
 *Duration: 5-7 days*
 
 **Goal**: Implement basic credential verification using ACA-Py backend wallet.
@@ -301,7 +303,7 @@ Response:
 
 ---
 
-### **Phase 2.3: Real-Time Revocation Checking** 🚫
+### **Phase 3.3: Real-Time Revocation Checking** 🚫
 *Duration: 4-6 days*
 
 **Goal**: Implement real-time revocation status checking via ACA-Py.
@@ -329,7 +331,7 @@ Response:
 
 ---
 
-### **Phase 2.4: Tier Selection & Fallback Logic** 🎯
+### **Phase 3.4: Tier Selection & Fallback Logic** 🎯
 *Duration: 3-4 days*
 
 **Goal**: Implement intelligent tier selection based on network availability.
@@ -384,7 +386,7 @@ Future<VerificationResult> verifyCredential(credential) async {
 
 ---
 
-### **Phase 2.5: Proof Protocol Support (Presentation)** 🎭
+### **Phase 3.5: Proof Protocol Support (Presentation)** 🎭
 *Duration: 7-10 days*
 
 **Goal**: Enable full proof presentation protocol via ACA-Py.
@@ -430,7 +432,7 @@ Response:
 
 ---
 
-### **Phase 2.6: UI/UX Enhancements for Online Mode** 🎨
+### **Phase 3.6: UI/UX Enhancements for Online Mode** 🎨
 *Duration: 4-5 days*
 
 **Goal**: Polish UI to clearly show online vs offline verification.
@@ -476,7 +478,7 @@ Response:
 
 ---
 
-### **Phase 2.7: Audit Logging & Analytics** 📊
+### **Phase 3.7: Audit Logging & Analytics** 📊
 *Duration: 3-4 days*
 
 **Goal**: Implement comprehensive logging for compliance and debugging.
@@ -521,7 +523,7 @@ Response:
 
 ---
 
-### **Phase 2.8: Testing & Performance Optimization** 🚀
+### **Phase 3.8: Testing & Performance Optimization** 🚀
 *Duration: 5-7 days*
 
 **Goal**: Comprehensive testing and performance optimization.
@@ -558,14 +560,14 @@ Response:
 ## Phase 2 Timeline Summary
 
 ```
-Phase 2.1: ACA-Py Integration         [3-5 days]   Week 1
-Phase 2.2: Basic Verification         [5-7 days]   Week 1-2
-Phase 2.3: Revocation Checking        [4-6 days]   Week 2
-Phase 2.4: Tier Selection             [3-4 days]   Week 2-3
-Phase 2.5: Proof Protocol             [7-10 days]  Week 3-4
-Phase 2.6: UI/UX Enhancements         [4-5 days]   Week 4
-Phase 2.7: Audit Logging              [3-4 days]   Week 5
-Phase 2.8: Testing & Optimization     [5-7 days]   Week 5-6
+Phase 3.1: ACA-Py Integration         [3-5 days]   Week 1
+Phase 3.2: Basic Verification         [5-7 days]   Week 1-2
+Phase 3.3: Revocation Checking        [4-6 days]   Week 2
+Phase 3.4: Tier Selection             [3-4 days]   Week 2-3
+Phase 3.5: Proof Protocol             [7-10 days]  Week 3-4
+Phase 3.6: UI/UX Enhancements         [4-5 days]   Week 4
+Phase 3.7: Audit Logging              [3-4 days]   Week 5
+Phase 3.8: Testing & Optimization     [5-7 days]   Week 5-6
 
 TOTAL: 34-48 days (5-7 weeks)
 ```
@@ -917,4 +919,4 @@ Phase 2 transforms the app from **offline-only** to a **hybrid online/offline** 
 
 ---
 
-**Ready to begin Phase 2.1: ACA-Py Backend Integration Foundation!** 🚀
+**Ready to begin Phase 3.1: ACA-Py Backend Integration Foundation!** 🚀
