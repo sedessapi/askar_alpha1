@@ -5,7 +5,7 @@ edition = "2021"
 
 # This is crucial for creating a shared library
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 aries-askar = "0.3.1"

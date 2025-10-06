@@ -1,17 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 /// Custom exceptions for better error handling
 class AskarExportException implements Exception {
   final String message;
+  final Object? originalError;
   final int? statusCode;
-  final dynamic originalError;
 
-  AskarExportException(this.message, {this.statusCode, this.originalError});
+  AskarExportException(
+    this.message, {
+    this.originalError,
+    this.statusCode,
+  });
 
   @override
-  String toString() => 'AskarExportException: $message';
+  String toString() {
+    final status = statusCode != null ? ' (Status Code: $statusCode)' : '';
+    if (originalError != null) {
+      return 'AskarExportException: $message$status\n--- Original Error ---\n$originalError';
+    }
+    return 'AskarExportException: $message$status';
+  }
 }
 
 class AskarExportClient {
@@ -19,7 +30,7 @@ class AskarExportClient {
   final http.Client _http;
 
   AskarExportClient(this.baseUrl, {http.Client? httpClient})
-    : _http = httpClient ?? http.Client() {
+      : _http = httpClient ?? http.Client() {
     // Validate base URL format
     final uri = Uri.tryParse(baseUrl);
     if (uri == null || (!uri.hasScheme || !uri.hasAuthority)) {
@@ -54,21 +65,30 @@ class AskarExportClient {
           .timeout(const Duration(seconds: 8));
 
       return response.statusCode == 200;
-    } on SocketException {
+    } on SocketException catch (e) {
+      debugPrint('--- AskarExportClient SocketException ---');
+      debugPrint(e.toString());
       throw AskarExportException(
         'Network connection failed. Check server URL and connectivity.',
+        originalError: e,
       );
     } on HttpException catch (e) {
+      debugPrint('--- AskarExportClient HttpException ---');
+      debugPrint(e.toString());
       throw AskarExportException(
         'HTTP error during health check: ${e.message}',
         originalError: e,
       );
     } on FormatException catch (e) {
+      debugPrint('--- AskarExportClient FormatException ---');
+      debugPrint(e.toString());
       throw AskarExportException(
         'Invalid server response format during health check',
         originalError: e,
       );
     } catch (e) {
+      debugPrint('--- AskarExportClient Generic Exception ---');
+      debugPrint(e.toString());
       throw AskarExportException(
         'Health check failed: ${e.toString()}',
         originalError: e,
@@ -152,16 +172,23 @@ class AskarExportClient {
           originalError: e,
         );
       }
-    } on SocketException {
+    } on SocketException catch (e) {
+      debugPrint('--- AskarExportClient SocketException ---');
+      debugPrint(e.toString());
       throw AskarExportException(
         'Network connection failed during export download',
+        originalError: e,
       );
     } on HttpException catch (e) {
+      debugPrint('--- AskarExportClient HttpException ---');
+      debugPrint(e.toString());
       throw AskarExportException(
         'HTTP error during export: ${e.message}',
         originalError: e,
       );
     } catch (e) {
+      debugPrint('--- AskarExportClient Generic Exception ---');
+      debugPrint(e.toString());
       if (e is AskarExportException) rethrow;
       throw AskarExportException(
         'Export download failed: ${e.toString()}',

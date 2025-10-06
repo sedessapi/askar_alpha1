@@ -5,66 +5,56 @@ import 'package:ffi/ffi.dart';
 
 // FFI type definitions for Rust functions
 
-typedef ProvisionWalletNative =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-    );
-typedef ProvisionWalletDart =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-    );
+typedef ProvisionWalletNative = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+);
+typedef ProvisionWalletDart = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+);
 
-typedef InsertEntryNative =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-      ffi.Pointer<Utf8> entryName,
-      ffi.Pointer<Utf8> entryValue,
-    );
-typedef InsertEntryDart =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-      ffi.Pointer<Utf8> entryName,
-      ffi.Pointer<Utf8> entryValue,
-    );
+typedef InsertEntryNative = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+  ffi.Pointer<Utf8> entryName,
+  ffi.Pointer<Utf8> entryValue,
+);
+typedef InsertEntryDart = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+  ffi.Pointer<Utf8> entryName,
+  ffi.Pointer<Utf8> entryValue,
+);
 
-typedef ListEntriesNative =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-    );
-typedef ListEntriesDart =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-    );
+typedef ListEntriesNative = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+);
+typedef ListEntriesDart = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+);
 
-typedef ImportBulkEntriesNative =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-      ffi.Pointer<Utf8> jsonData,
-    );
-typedef ImportBulkEntriesDart =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-      ffi.Pointer<Utf8> jsonData,
-    );
+typedef ImportBulkEntriesNative = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+  ffi.Pointer<Utf8> jsonData,
+);
+typedef ImportBulkEntriesDart = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+  ffi.Pointer<Utf8> jsonData,
+);
 
-typedef ListCategoriesNative =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-    );
-typedef ListCategoriesDart =
-    ffi.Pointer<Utf8> Function(
-      ffi.Pointer<Utf8> dbPath,
-      ffi.Pointer<Utf8> rawKey,
-    );
+typedef ListCategoriesNative = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+);
+typedef ListCategoriesDart = ffi.Pointer<Utf8> Function(
+  ffi.Pointer<Utf8> dbPath,
+  ffi.Pointer<Utf8> rawKey,
+);
 
 typedef FreeStringNative = ffi.Void Function(ffi.Pointer<Utf8> ptr);
 typedef FreeStringDart = void Function(ffi.Pointer<Utf8> ptr);
@@ -118,8 +108,36 @@ class AskarFfi {
     if (Platform.isAndroid) {
       return ffi.DynamicLibrary.open('libffi_bridge.so');
     }
-    if (Platform.isIOS || Platform.isMacOS) {
-      return ffi.DynamicLibrary.open('libffi_bridge.dylib');
+    if (Platform.isIOS) {
+      return ffi.DynamicLibrary.process();
+    }
+    if (Platform.isMacOS) {
+      // For macOS, use the library from the project directory
+      // This works for both development and release builds
+      final executableDir = File(Platform.resolvedExecutable).parent.path;
+
+      // Try multiple locations in order of preference
+      final possiblePaths = [
+        // 1. Bundled with app (release builds)
+        '$executableDir/../Frameworks/libffi_bridge.dylib',
+        // 2. In macos/libs directory (development builds)
+        '/Users/itzmi/dev/askar_alpha/macos/libs/libffi_bridge.dylib',
+        // 3. Just the library name (if it's in system path)
+        'libffi_bridge.dylib',
+      ];
+
+      for (final path in possiblePaths) {
+        try {
+          return ffi.DynamicLibrary.open(path);
+        } catch (e) {
+          // Try next path
+          continue;
+        }
+      }
+
+      throw UnsupportedError(
+        'Could not load libffi_bridge.dylib. Please run: cd rust_lib && ./build_all.sh',
+      );
     }
     throw UnsupportedError('Unsupported platform for Askar FFI');
   }

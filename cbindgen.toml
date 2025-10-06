@@ -1,0 +1,10 @@
+language = "C"
+cpp_compat = false
+
+[export]
+include = ["provision_wallet", "insert_entry", "list_entries", "import_bulk_entries", "list_categories", "free_string"]
+
+
+[parse]
+parse_deps = true
+include = ["ffi_bridge"]
