@@ -4,15 +4,22 @@
 
 Phase 2 introduces **QR code-based credential verification** for offline, peer-to-peer credential exchange. This approach aligns perfectly with Phase 1's offline-first architecture and provides the most natural user flow for how digital credentials are actually shared in the real world.
 
+**Single Codebase Architecture**: The app serves **both** Holder and Verifier roles in a single codebase with a mode toggle in settings. Users can switch between:
+- **Holder Mode**: Manage and present their credentials via QR code
+- **Verifier Mode**: Scan and verify credentials from others
+
+This provides maximum flexibility since users often play both roles (e.g., a doctor presents their medical license but also verifies patient insurance).
+
 **Why QR Code First?**
 - **Natural User Flow**: Matches how credentials are presented in real life (holder shows, verifier scans)
 - **Works Offline**: Perfect continuation of Phase 1's offline capabilities
 - **Faster Implementation**: 2-3 weeks vs 5-7 weeks for online verification
 - **No Backend Dependency**: Verifier operates independently
 - **Foundation for Phase 3**: Online verification enhances (not replaces) QR verification
+- **Single App**: 70-80% code reuse, users don't need separate apps
 
-**Timeline**: 2-3 weeks (10-15 days)
-**Architecture**: Holder app generates QR → Verifier app scans → Offline Trust Bundle verification
+**Timeline**: 2-3 weeks (16 days)
+**Architecture**: Single codebase with Holder/Verifier mode toggle → Holder generates QR → Verifier scans → Offline Trust Bundle verification
 
 ---
 
@@ -192,7 +199,156 @@ Verifier detects `gzip:` prefix and decompresses before parsing.
 
 ## Phase 2 Sub-Phases
 
-### Phase 2.1: QR Code Generation (Days 1-3)
+### Phase 2.0: App Mode Foundation - Holder/Verifier Toggle (Day 1)
+
+**Goal**: Establish single codebase architecture with Holder/Verifier mode toggle in settings.
+
+**Rationale**: 
+The app serves **both** roles (holder and verifier) in a single codebase. Users can:
+- **Holder Mode**: Manage and present their credentials (via QR code)
+- **Verifier Mode**: Scan and verify credentials from others
+
+This provides maximum flexibility since users often play both roles (e.g., a doctor presents their license but also verifies patient insurance).
+
+**Deliverables**:
+- `AppMode` enum (holder/verifier)
+- Updated `AppSettingsProvider` with mode toggle
+- Settings page with mode selector (radio buttons)
+- Adaptive home page UI based on mode
+- Visual mode indicator (color-coded: blue=holder, green=verifier)
+
+**Technical Tasks**:
+1. Add `AppMode` enum to app settings model
+2. Add `appMode` getter and `setAppMode()` method to `AppSettingsProvider`
+3. Persist mode selection in SharedPreferences
+4. Update Settings page with "App Mode" section (radio buttons)
+5. Update Home page with adaptive UI:
+   - Holder mode: Show "My Credentials", wallet, sync buttons (blue theme)
+   - Verifier mode: Show "Scan QR Code" prominent button (green theme)
+6. Add mode indicator badge in AppBar (always visible)
+7. Color-code navigation based on mode
+
+**UI/UX Design**:
+
+**Holder Mode (Blue Theme)**:
+```
+┌─────────────────────────────────────┐
+│ My Credentials          [HOLDER] ⚙️ │  ← Blue AppBar
+├─────────────────────────────────────┤
+│ 🌐 Network Status: Online           │
+│                                     │
+│ 📂 Open Wallet                      │
+│    View and manage your credentials │
+│                                     │
+│ 🔄 Sync Wallet                      │
+│    Import from backend              │
+│                                     │
+│ 🔐 Trust Bundle Settings            │
+│    Configure trusted issuers        │
+└─────────────────────────────────────┘
+```
+
+**Verifier Mode (Green Theme)**:
+```
+┌─────────────────────────────────────┐
+│ Verify Credentials    [VERIFIER] ⚙️ │  ← Green AppBar
+├─────────────────────────────────────┤
+│                                     │
+│          📱                         │
+│     Ready to Verify                 │
+│                                     │
+│  Scan a credential QR code to       │
+│  verify its authenticity            │
+│                                     │
+│   ┌─────────────────────────┐      │
+│   │  📷 Scan QR Code        │      │  ← Primary action
+│   └─────────────────────────┘      │
+│                                     │
+│         📜 View Scan History        │
+└─────────────────────────────────────┘
+```
+
+**Settings Page Mode Toggle**:
+```
+┌─────────────────────────────────────┐
+│ Settings                         ✕  │
+├─────────────────────────────────────┤
+│ App Mode                            │
+│ ┌─────────────────────────────────┐ │
+│ │ ○ Holder Mode              👤  │ │
+│ │   Present your credentials      │ │
+│ │                                 │ │
+│ │ ● Verifier Mode            ✓   │ │
+│ │   Scan and verify credentials   │ │
+│ └─────────────────────────────────┘ │
+│                                     │
+│ ℹ️ You can switch between modes at │
+│ any time. Holder mode for managing │
+│ and presenting credentials.        │
+│ Verifier mode for scanning.        │
+│                                     │
+│ Network                             │
+│ ⚡ Airplane Mode            [OFF]  │
+└─────────────────────────────────────┘
+```
+
+**Code Structure**:
+```dart
+// lib/models/app_mode.dart
+enum AppMode {
+  holder,   // Present credentials
+  verifier, // Verify credentials
+}
+
+// lib/providers/app_settings_provider.dart
+class AppSettingsProvider extends ChangeNotifier {
+  AppMode get appMode { /* ... */ }
+  Future<void> setAppMode(AppMode mode) { /* ... */ }
+  
+  bool get isHolderMode => appMode == AppMode.holder;
+  bool get isVerifierMode => appMode == AppMode.verifier;
+}
+
+// lib/ui/pages/home_page.dart
+Widget build(BuildContext context) {
+  final appSettings = context.watch<AppSettingsProvider>();
+  
+  return Scaffold(
+    appBar: AppBar(
+      backgroundColor: appSettings.isHolderMode 
+          ? Colors.blue : Colors.green,
+      title: Text(appSettings.isHolderMode 
+          ? 'My Credentials' : 'Verify Credentials'),
+      actions: [
+        Chip(label: Text(appSettings.isHolderMode 
+            ? 'HOLDER' : 'VERIFIER')),
+      ],
+    ),
+    body: appSettings.isHolderMode
+        ? _buildHolderView()   // Wallet, sync, trust bundle
+        : _buildVerifierView(), // Scan QR, scan history
+  );
+}
+```
+
+**Benefits**:
+- ✅ **70-80% code reuse** (same wallet, verification, models)
+- ✅ **User flexibility** (one app, both roles)
+- ✅ **Simplified maintenance** (one codebase, one deployment)
+- ✅ **Real-world alignment** (users often play both roles)
+- ✅ **Smaller app size** (shared dependencies)
+
+**Testing**:
+- Toggle between modes and verify UI updates
+- Verify mode persists across app restarts
+- Test navigation in both modes
+- Verify color scheme changes correctly
+
+**Timeline**: 1 day (6-8 hours)
+
+---
+
+### Phase 2.1: QR Code Generation (Days 2-4)
 
 **Goal**: Holder can generate QR code from any credential in their wallet.
 
@@ -206,7 +362,7 @@ Verifier detects `gzip:` prefix and decompresses before parsing.
 1. Add `qr_flutter: ^4.1.0` dependency
 2. Create `lib/services/qr_code_service.dart`
 3. Create `lib/ui/pages/holder_present_credential_page.dart`
-4. Add "Share as QR" button to credential detail view
+4. Add "Share as QR" button to credential detail view (visible in Holder mode)
 5. Implement brightness boost for QR display
 6. Test with various credential sizes
 
@@ -214,7 +370,7 @@ Verifier detects `gzip:` prefix and decompresses before parsing.
 
 ---
 
-### Phase 2.2: QR Code Scanning (Days 4-6)
+### Phase 2.2: QR Code Scanning (Days 5-7)
 
 **Goal**: Verifier can scan QR codes and decode credential data.
 
@@ -231,12 +387,13 @@ Verifier detects `gzip:` prefix and decompresses before parsing.
 4. Implement real-time QR detection
 5. Add gzip decompression support
 6. Test with malformed/corrupt QR codes
+7. Add prominent "Scan QR Code" button in Verifier mode home page
 
 **Key Code**: See [QR Scanner Service](#qr-scanner-service) below.
 
 ---
 
-### Phase 2.3: Offline Verification Flow (Days 7-9)
+### Phase 2.3: Offline Verification Flow (Days 8-10)
 
 **Goal**: Integrate QR scanning with existing Trust Bundle verification.
 
@@ -271,7 +428,7 @@ if (result.tier == VerificationTier.BEST) {
 
 ---
 
-### Phase 2.4: Enhanced Features (Days 10-12)
+### Phase 2.4: Enhanced Features (Days 11-13)
 
 **Goal**: Polish UX and add production-ready features.
 
@@ -309,7 +466,7 @@ if (DateTime.now().difference(generatedAt).inSeconds > expiresIn) {
 
 ---
 
-### Phase 2.5: Testing & Refinement (Days 13-15)
+### Phase 2.5: Testing & Refinement (Days 14-16)
 
 **Goal**: Ensure production quality with comprehensive testing.
 
@@ -1044,17 +1201,28 @@ void main() {
 
 ## Success Criteria
 
+### Phase 2.0 Success Metrics
+- ✅ AppMode enum created (Holder/Verifier)
+- ✅ Settings page has mode toggle with radio buttons
+- ✅ Home page UI adapts based on mode
+- ✅ Mode indicator badge visible in AppBar
+- ✅ Color scheme changes correctly (blue=holder, green=verifier)
+- ✅ Mode persists across app restarts
+- ✅ Clear visual distinction between modes
+
 ### Phase 2.1 Success Metrics
 - ✅ Holder can generate QR code from any credential
 - ✅ QR code displays full-screen with high contrast
 - ✅ Brightness auto-boosts when QR displayed
 - ✅ Unit tests pass (QR encoding/decoding)
+- ✅ "Share as QR" button visible only in Holder mode
 
 ### Phase 2.2 Success Metrics
 - ✅ Verifier can scan QR codes using camera
 - ✅ QR detection happens automatically (no manual capture)
 - ✅ Malformed QR codes show clear error messages
 - ✅ Camera permissions requested with explanation
+- ✅ "Scan QR Code" prominent in Verifier mode home
 
 ### Phase 2.3 Success Metrics
 - ✅ Scanned credentials verified using Trust Bundle (Phase 1)
@@ -1076,6 +1244,8 @@ void main() {
 - ✅ Zero critical bugs in production
 
 ### Overall Phase 2 Success
+- ✅ Single codebase serves both Holder and Verifier roles
+- ✅ Users can switch modes seamlessly
 - ✅ Holder can present credentials via QR code
 - ✅ Verifier can scan and verify credentials offline
 - ✅ Trust Bundle verification integrated seamlessly
@@ -1090,12 +1260,13 @@ void main() {
 
 | Sub-Phase | Duration | Start | End | Key Deliverable |
 |-----------|----------|-------|-----|-----------------|
-| 2.1 QR Generation | 3 days | Day 1 | Day 3 | Holder can generate QR codes |
-| 2.2 QR Scanning | 3 days | Day 4 | Day 6 | Verifier can scan QR codes |
-| 2.3 Verification Flow | 3 days | Day 7 | Day 9 | End-to-end offline verification |
-| 2.4 Enhanced Features | 3 days | Day 10 | Day 12 | Scan history, time-limited QR |
-| 2.5 Testing & Refinement | 3 days | Day 13 | Day 15 | Production-ready quality |
-| **Total** | **15 days** | **Day 1** | **Day 15** | **Phase 2 complete** |
+| 2.0 App Mode Foundation | 1 day | Day 1 | Day 1 | Holder/Verifier toggle in settings |
+| 2.1 QR Generation | 3 days | Day 2 | Day 4 | Holder can generate QR codes |
+| 2.2 QR Scanning | 3 days | Day 5 | Day 7 | Verifier can scan QR codes |
+| 2.3 Verification Flow | 3 days | Day 8 | Day 10 | End-to-end offline verification |
+| 2.4 Enhanced Features | 3 days | Day 11 | Day 13 | Scan history, time-limited QR |
+| 2.5 Testing & Refinement | 3 days | Day 14 | Day 16 | Production-ready quality |
+| **Total** | **16 days** | **Day 1** | **Day 16** | **Phase 2 complete** |
 
 ### Resource Requirements
 
@@ -1128,11 +1299,12 @@ void main() {
 
 ### Milestones
 
-1. **Day 3**: QR generation works, holder can display credentials
-2. **Day 6**: QR scanning works, verifier can decode credentials
-3. **Day 9**: End-to-end verification flow complete
-4. **Day 12**: Enhanced features (history, expiry) implemented
-5. **Day 15**: All tests pass, production-ready
+1. **Day 1**: App mode toggle complete, settings page with Holder/Verifier selector
+2. **Day 4**: QR generation works, holder can display credentials
+3. **Day 7**: QR scanning works, verifier can decode credentials
+4. **Day 10**: End-to-end verification flow complete
+5. **Day 13**: Enhanced features (history, expiry) implemented
+6. **Day 16**: All tests pass, production-ready
 
 ---
 
@@ -1234,8 +1406,8 @@ This is the **fastest path to a working verifiable credentials app** that users 
 ---
 
 **Next Steps**:
-1. ✅ Approve Phase 2 plan
-2. Rename existing Phase 2 → Phase 3
-3. Start Phase 2.1: QR Generation (Day 1)
-4. Tag milestone: `phase2_qr_planning`
+1. ✅ Approve Phase 2 plan with mode toggle
+2. ✅ Rename existing Phase 2 → Phase 3
+3. Start Phase 2.0: App Mode Foundation (Day 1)
+4. ✅ Tag milestone: `phase2_qr_planning`
 
