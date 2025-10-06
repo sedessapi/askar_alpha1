@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:askar_alpha/ui/pages/trust_bundle_settings_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -23,6 +24,21 @@ class HomePage extends StatelessWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: [
+                _buildMiniAppCard(
+                  context,
+                  icon: Icons.security,
+                  title: 'Trust Bundle',
+                  description: 'Manage trust settings',
+                  color: Colors.purple,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TrustBundleSettingsPage(),
+                      ),
+                    );
+                  },
+                ),
                 _buildMiniAppCard(
                   context,
                   icon: Icons.qr_code_scanner,
