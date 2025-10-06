@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../services/askar_ffi.dart';
 import '../../services/enhanced_verification_service.dart';
+import '../../services/app_settings_provider.dart';
 
 class VerifyLocalPage extends StatefulWidget {
   const VerifyLocalPage({super.key});
@@ -117,6 +118,8 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
     try {
       final enhancedService =
           Provider.of<EnhancedVerificationService>(context, listen: false);
+      final appSettings =
+          Provider.of<AppSettingsProvider>(context, listen: false);
 
       // Get the credential value
       final credValue = credential['value'];
@@ -131,8 +134,11 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
         return;
       }
 
-      // Run enhanced verification
-      final result = await enhancedService.verifyCredential(credentialData);
+      // Run enhanced verification with airplane mode flag
+      final result = await enhancedService.verifyCredential(
+        credentialData,
+        isOffline: appSettings.airplaneMode,
+      );
 
       setState(() {
         _verificationResults[credentialId] = result;

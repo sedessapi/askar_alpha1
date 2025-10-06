@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../services/trust_bundle_provider.dart';
 
@@ -34,6 +35,16 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
       provider.checkHealth();
     } else if (provider.isHealthy == null) {
       provider.checkHealth();
+    }
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null && mounted) {
+      _urlController.text = data!.text!;
+      final provider = context.read<TrustBundleProvider>();
+      provider.setBundleUrl(data.text!);
+      _checkHealthIfNeeded();
     }
   }
 
@@ -199,10 +210,34 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
             ),
 
             const SizedBox(height: 16),
+            
+            // Bundle URL field with paste button
+            Row(
+              children: [
+                Expanded(
+                  child: const Text(
+                    'Bundle URL',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _pasteFromClipboard,
+                  icon: const Icon(Icons.paste, size: 18),
+                  label: const Text('Paste'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             TextField(
               controller: _urlController,
               decoration: const InputDecoration(
-                labelText: 'Bundle URL',
+                hintText: 'http://mary4.com:9090/bundle',
                 border: OutlineInputBorder(),
               ),
               onChanged: (value) {

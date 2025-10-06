@@ -1,4 +1,5 @@
 import 'package:askar_alpha/ui/theme/theme_notifier.dart';
+import 'package:askar_alpha/services/app_settings_provider.dart';
 import 'package:askar_alpha/ui/pages/download_page.dart';
 import 'package:askar_alpha/ui/pages/credentials_page.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +28,45 @@ class SettingsPage extends StatelessWidget {
               );
             },
           ),
+          
+          // Airplane Mode Toggle
+          Consumer<AppSettingsProvider>(
+            builder: (context, settings, child) {
+              return ListTile(
+                leading: Icon(
+                  settings.airplaneMode ? Icons.airplanemode_active : Icons.airplanemode_inactive,
+                  color: settings.airplaneMode ? Colors.orange : null,
+                ),
+                title: const Text('Airplane Mode'),
+                subtitle: Text(
+                  settings.airplaneMode 
+                    ? 'Network disabled (offline simulation)' 
+                    : 'Network enabled',
+                  style: TextStyle(
+                    color: settings.airplaneMode ? Colors.orange : Colors.grey,
+                  ),
+                ),
+                trailing: Switch(
+                  value: settings.airplaneMode,
+                  onChanged: (value) {
+                    settings.setAirplaneMode(value);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value 
+                            ? '✈️ Airplane mode enabled - Network disabled'
+                            : '✈️ Airplane mode disabled - Network enabled',
+                        ),
+                        duration: const Duration(seconds: 2),
+                        backgroundColor: value ? Colors.orange : Colors.green,
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          
           const Divider(),
           _buildDeveloperToolsSection(context),
         ],

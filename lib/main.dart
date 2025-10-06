@@ -1,5 +1,6 @@
 import 'package:askar_alpha/services/trust_bundle_provider.dart';
 import 'package:askar_alpha/services/enhanced_verification_service.dart';
+import 'package:askar_alpha/services/app_settings_provider.dart';
 import 'package:askar_alpha/ui/navigation/app_navigation.dart';
 import 'package:askar_alpha/ui/theme/app_theme.dart';
 import 'package:askar_alpha/ui/theme/theme_notifier.dart';
@@ -13,6 +14,10 @@ void main() async {
 
   final dbService = DbService();
   await dbService.init();
+
+  // Initialize app settings
+  final appSettings = AppSettingsProvider();
+  await appSettings.init();
 
   final bundleClient = BundleClient();
   final manifestVerifier = ManifestVerifier(trustedKeys: {
@@ -40,6 +45,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier(ThemeMode.light)),
+        ChangeNotifierProvider.value(value: appSettings),
         ChangeNotifierProvider(
           create: (_) => TrustBundleProvider(
             ingestionService: ingestionService,

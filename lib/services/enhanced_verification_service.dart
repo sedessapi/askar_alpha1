@@ -53,9 +53,12 @@ class EnhancedVerificationService {
   /// BEST - Trust Bundle (offline, fast, trusted)
   /// GOOD - Online Ledger (online, slower, cryptographically verified)
   /// BASIC - Structural only (offline, minimal verification)
+  /// 
+  /// If [isOffline] is true, skips GOOD tier (online ledger) verification
   Future<EnhancedVerificationResult> verifyCredential(
-    dynamic credentialData,
-  ) async {
+    dynamic credentialData, {
+    bool isOffline = false,
+  }) async {
     // 1. Parse credential
     Map<String, dynamic> credential;
     if (credentialData is String) {
@@ -122,9 +125,10 @@ class EnhancedVerificationService {
       // Fall through to next tier
     }
 
-    // 4. Try GOOD tier - Online ledger verification
-    if (acaPyClient != null) {
+    // 4. Try GOOD tier - Online ledger verification (skip if offline mode)
+    if (!isOffline && acaPyClient != null) {
       try {
+        print('🌐 Attempting online ledger verification...');
         final isHealthy = await acaPyClient!.checkHealth();
 
         if (isHealthy) {
@@ -148,6 +152,8 @@ class EnhancedVerificationService {
         print('Online verification failed: $e');
         // Fall through to BASIC tier
       }
+    } else if (isOffline) {
+      print('✈️ Airplane mode enabled - Skipping online ledger verification');
     }
 
     // 5. Fall back to BASIC tier - Structural only

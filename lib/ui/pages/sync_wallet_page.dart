@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -33,13 +34,15 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
   bool _busy = false;
   bool _isHealthy = false;
   String _status = 'Ready to sync';
-  int _syncedCredentials = 0;
+  int _totalCredentialsInWallet = 0;
+  List<Map<String, dynamic>> _credentials = [];
   AskarExportClient? _client;
 
   @override
   void initState() {
     super.initState();
     _checkHealthOnStart();
+    _loadWalletCredentialCount();
   }
 
   @override
@@ -52,6 +55,60 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
 
   Future<void> _checkHealthOnStart() async {
     await _checkHealth();
+  }
+
+  Future<void> _loadWalletCredentialCount() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final walletPath = '${dir.path}/$_walletName.db';
+      final walletFile = File(walletPath);
+
+      if (!walletFile.existsSync()) {
+        setState(() {
+          _totalCredentialsInWallet = 0;
+          _credentials = [];
+        });
+        return;
+      }
+
+      // Get credential count
+      final categoriesResult = _askarFfi.listCategories(
+        dbPath: walletPath,
+        rawKey: _walletKey,
+      );
+
+      // Get credential list
+      final entriesResult = _askarFfi.listEntries(
+        dbPath: walletPath,
+        rawKey: _walletKey,
+      );
+
+      if (categoriesResult['success'] == true && entriesResult['success'] == true) {
+        final categories = categoriesResult['categories'] as Map<String, dynamic>? ?? {};
+        final credentialCount = categories['credential'] as int? ?? 0;
+        
+        final entries = entriesResult['entries'] as List? ?? [];
+        final creds = entries
+            .where((e) => e['category'] == 'credential')
+            .map((e) => e as Map<String, dynamic>)
+            .toList();
+        
+        setState(() {
+          _totalCredentialsInWallet = credentialCount;
+          _credentials = creds;
+        });
+      } else {
+        setState(() {
+          _totalCredentialsInWallet = 0;
+          _credentials = [];
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _totalCredentialsInWallet = 0;
+        _credentials = [];
+      });
+    }
   }
 
   void _setStatus(String s) => setState(() => _status = s);
@@ -116,7 +173,6 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
     setState(() {
       _busy = true;
       _status = 'Starting sync...';
-      _syncedCredentials = 0;
     });
 
     try {
@@ -182,10 +238,12 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
         final failed = importResult['failed'] as int? ?? 0;
 
         setState(() {
-          _syncedCredentials = imported;
-          _status = '✅ Synced $imported credentials' +
-              (failed > 0 ? ' ($failed failed)' : '');
+          _status = '✅ Sync completed successfully' +
+              (failed > 0 ? ' ($failed items failed)' : '');
         });
+
+        // Reload total credential count
+        await _loadWalletCredentialCount();
 
         // Clean up temp file
         try {
@@ -301,18 +359,34 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
 
             const SizedBox(height: 16),
 
-            // Server URL field
+            // Server URL field with paste button
+            Row(
+              children: [
+                Expanded(
+                  child: const Text(
+                    'Export Server URL',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _pasteServerUrl,
+                  icon: const Icon(Icons.paste, size: 18),
+                  label: const Text('Paste'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             TextFormField(
               controller: _serverCtrl,
-              decoration: InputDecoration(
-                labelText: 'Export Server URL',
+              decoration: const InputDecoration(
                 hintText: 'http://mary9.com:9070',
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.paste),
-                  onPressed: _pasteServerUrl,
-                  tooltip: 'Paste',
-                ),
+                border: OutlineInputBorder(),
               ),
               validator: _validateUrl,
               onChanged: (_) => _checkHealth(),
@@ -320,18 +394,34 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
 
             const SizedBox(height: 16),
 
-            // Profile ID field
+            // Profile ID field with paste button
+            Row(
+              children: [
+                Expanded(
+                  child: const Text(
+                    'Profile ID',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _pasteFromClipboard,
+                  icon: const Icon(Icons.paste, size: 18),
+                  label: const Text('Paste'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             TextFormField(
               controller: _profileCtrl,
-              decoration: InputDecoration(
-                labelText: 'Profile ID',
+              decoration: const InputDecoration(
                 hintText: 'Enter profile identifier',
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.paste),
-                  onPressed: _pasteFromClipboard,
-                  tooltip: 'Paste',
-                ),
+                border: OutlineInputBorder(),
               ),
               validator: _validateProfile,
             ),
@@ -383,24 +473,6 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(_status),
-                    if (_syncedCredentials > 0) ...[
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.green),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Synced $_syncedCredentials credentials',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -426,6 +498,82 @@ class _SyncWalletPageState extends State<SyncWalletPage> {
                     const SizedBox(height: 12),
                     _buildInfoRow('Wallet Name', _walletName),
                     _buildInfoRow('Auto-created', 'Yes, if needed'),
+                    _buildInfoRow(
+                      'Total Credentials',
+                      _totalCredentialsInWallet > 0
+                          ? '$_totalCredentialsInWallet'
+                          : 'None',
+                    ),
+                    
+                    // Show credential list if there are credentials
+                    if (_credentials.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Credentials:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ..._credentials.map((cred) {
+                        // Extract schema name from credential value
+                        String displayName = cred['name'] ?? 'Unnamed';
+                        try {
+                          if (cred['value'] != null) {
+                            final credValue = jsonDecode(cred['value']) as Map<String, dynamic>;
+                            final schemaId = credValue['schema_id'] as String?;
+                            if (schemaId != null) {
+                              // Extract schema name from schema_id format: did:2:name:version
+                              final parts = schemaId.split(':');
+                              if (parts.length >= 3) {
+                                displayName = parts[2]; // Get the schema name
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          // If parsing fails, keep the default name
+                        }
+                        
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  displayName,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'ID: ${cred['name'] ?? 'Unknown'}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                    color: Colors.grey,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                    
                     const SizedBox(height: 8),
                     const Text(
                       'Tip: Use "Verify Local" to test your synced credentials.',
