@@ -12,6 +12,7 @@ class TrustBundleSettingsPage extends StatefulWidget {
 
 class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
   late TextEditingController _urlController;
+  String _lastCheckedUrl = '';
 
   @override
   void initState() {
@@ -21,7 +22,19 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
       final provider = context.read<TrustBundleProvider>();
       provider.loadInitialData();
       _urlController.text = provider.bundleUrl;
+      _lastCheckedUrl = provider.bundleUrl;
+      _checkHealthIfNeeded();
     });
+  }
+
+  void _checkHealthIfNeeded() {
+    final provider = context.read<TrustBundleProvider>();
+    if (_lastCheckedUrl != provider.bundleUrl) {
+      _lastCheckedUrl = provider.bundleUrl;
+      provider.checkHealth();
+    } else if (provider.isHealthy == null) {
+      provider.checkHealth();
+    }
   }
 
   @override
@@ -78,7 +91,8 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: provider.isLoading ? null : provider.syncAndSaveBundle,
+                  onPressed:
+                      provider.isLoading ? null : provider.syncAndSaveBundle,
                   icon: const Icon(Icons.cloud_download),
                   label: const Text('Sync Bundle'),
                   style: ElevatedButton.styleFrom(
@@ -137,38 +151,64 @@ class _TrustBundleSettingsPageState extends State<TrustBundleSettingsPage> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
+
+            // Server health indicator
+            Row(
+              children: [
+                const Text(
+                  'Server Status:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: provider.isHealthy == true
+                        ? Colors.green
+                        : provider.isHealthy == false
+                            ? Colors.red
+                            : Colors.grey,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    provider.isHealthy == true
+                        ? 'Online'
+                        : provider.isHealthy == false
+                            ? 'Offline'
+                            : 'Checking...',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (!provider.isLoading)
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () {
+                      provider.checkHealth();
+                    },
+                    tooltip: 'Recheck health',
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
             TextField(
               controller: _urlController,
               decoration: const InputDecoration(
                 labelText: 'Bundle URL',
                 border: OutlineInputBorder(),
               ),
-              onChanged: (value) => provider.setBundleUrl(value),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: provider.isLoading
-                      ? null
-                      : () async {
-                          await provider.checkHealth();
-                        },
-                  child: const Text('Check Health'),
-                ),
-                if (provider.isLoading && provider.isHealthy == null)
-                  const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else if (provider.isHealthy != null)
-                  Icon(
-                    provider.isHealthy! ? Icons.check_circle : Icons.error,
-                    color: provider.isHealthy! ? Colors.green : Colors.red,
-                  ),
-              ],
+              onChanged: (value) {
+                provider.setBundleUrl(value);
+                _checkHealthIfNeeded();
+              },
             ),
           ],
         ),

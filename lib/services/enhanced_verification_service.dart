@@ -88,9 +88,22 @@ class EnhancedVerificationService {
 
     // 3. Try BEST tier - Trust Bundle verification (offline, fast)
     try {
+      print('🔍 Attempting Trust Bundle verification...');
+      print('📄 Credential keys: ${credential.keys.toList()}');
+      print('📝 Issuer: ${credential['issuer']}');
+      print('📝 Schema ID: ${credential['schema_id']}');
+      print('📝 Cred Def ID: ${credential['cred_def_id']}');
+
       final bundleResult = await verifierService.verifyCredential(credential);
 
-      if (bundleResult.success && bundleResult.tier == tbc.VerificationTier.best) {
+      print(
+          '✅ Bundle verification result: ${bundleResult.tier.name} - ${bundleResult.message}');
+      if (bundleResult.details != null) {
+        print('📋 Details: ${bundleResult.details}');
+      }
+
+      if (bundleResult.success &&
+          bundleResult.tier == tbc.VerificationTier.best) {
         return EnhancedVerificationResult(
           structuralResult: structuralResult,
           tier: 'BEST',
@@ -99,9 +112,13 @@ class EnhancedVerificationService {
           message: bundleResult.message,
           details: bundleResult.details,
         );
+      } else {
+        print(
+            '⚠️ Bundle verification did not return BEST tier: ${bundleResult.tier.name}');
       }
-    } catch (e) {
-      print('Trust Bundle verification failed: $e');
+    } catch (e, stackTrace) {
+      print('❌ Trust Bundle verification failed: $e');
+      print('Stack trace: $stackTrace');
       // Fall through to next tier
     }
 
@@ -121,7 +138,8 @@ class EnhancedVerificationService {
               tier: 'GOOD',
               tierDescription: 'Verified using online ledger',
               success: true,
-              message: 'Credential cryptographically verified via online ledger',
+              message:
+                  'Credential cryptographically verified via online ledger',
               details: acaPyResult,
             );
           }

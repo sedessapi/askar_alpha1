@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:askar_alpha/ui/pages/credentials_page.dart';
-import 'package:askar_alpha/ui/pages/download_page.dart';
 import 'package:askar_alpha/ui/pages/home_page.dart';
 import 'package:askar_alpha/ui/pages/proofs_page.dart';
 import 'package:askar_alpha/ui/pages/scan_page.dart';
@@ -18,8 +16,6 @@ class _AppNavigationState extends State<AppNavigation> {
 
   final List<Widget> _screens = [
     const HomePage(),
-    const DownloadPage(),
-    const CredentialsPage(),
     const ScanPage(),
     const ProofsPage(),
     const SettingsPage(),
@@ -42,16 +38,6 @@ class _AppNavigationState extends State<AppNavigation> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.download_outlined),
-            selectedIcon: Icon(Icons.download),
-            label: 'Download',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.badge_outlined),
-            selectedIcon: Icon(Icons.badge),
-            label: 'Credentials',
           ),
           NavigationDestination(
             icon: Icon(Icons.qr_code_scanner_outlined),

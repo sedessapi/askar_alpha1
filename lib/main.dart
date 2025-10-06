@@ -29,7 +29,7 @@ void main() async {
 
   // Initialize VerifierService for trust bundle verification
   final verifierService = VerifierService(dbService);
-  
+
   // Initialize EnhancedVerificationService (without ACA-Py for now)
   final enhancedVerificationService = EnhancedVerificationService(
     verifierService: verifierService,

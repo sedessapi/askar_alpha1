@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:askar_alpha/ui/pages/trust_bundle_settings_page.dart';
 import 'package:askar_alpha/ui/pages/verify_local_page.dart';
+import 'package:askar_alpha/ui/pages/sync_wallet_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -42,12 +43,17 @@ class HomePage extends StatelessWidget {
                 ),
                 _buildMiniAppCard(
                   context,
-                  icon: Icons.qr_code_scanner,
-                  title: 'Scan',
-                  description: 'Scan QR codes',
-                  color: Colors.blue,
+                  icon: Icons.cloud_sync,
+                  title: 'Sync Wallet',
+                  description: 'Download & import wallet',
+                  color: Colors.cyan,
                   onTap: () {
-                    // TODO: Navigate to scanner mini-app
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SyncWalletPage(),
+                      ),
+                    );
                   },
                 ),
                 _buildMiniAppCard(

@@ -1,4 +1,6 @@
 import 'package:askar_alpha/ui/theme/theme_notifier.dart';
+import 'package:askar_alpha/ui/pages/download_page.dart';
+import 'package:askar_alpha/ui/pages/credentials_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -56,6 +58,44 @@ class SettingsPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+
+            // Download Page Link
+            ListTile(
+              leading: const Icon(Icons.download, color: Colors.orange),
+              title: const Text('Download'),
+              subtitle: const Text('Export wallet data from ACA-Py'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DownloadPage(),
+                  ),
+                );
+              },
+            ),
+
+            const Divider(),
+
+            // Credentials Page Link
+            ListTile(
+              leading: const Icon(Icons.badge, color: Colors.orange),
+              title: const Text('Credentials'),
+              subtitle: const Text('Import wallet data to Askar'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CredentialsPage(),
+                  ),
+                );
+              },
+            ),
+
+            const Divider(),
+            const SizedBox(height: 8),
+
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(

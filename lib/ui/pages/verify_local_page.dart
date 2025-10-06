@@ -16,12 +16,12 @@ class VerifyLocalPage extends StatefulWidget {
 
 class _VerifyLocalPageState extends State<VerifyLocalPage> {
   final AskarFfi _askarFfi = AskarFfi();
-  
+
   bool _isLoading = false;
   bool _walletOpen = false;
   List<Map<String, dynamic>> _credentials = [];
   Map<String, EnhancedVerificationResult?> _verificationResults = {};
-  
+
   String? _walletPath;
   final TextEditingController _walletNameCtrl = TextEditingController(
     text: 'my_wallet',
@@ -52,14 +52,15 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
       // Get documents directory and construct wallet path
       final docsDir = await getApplicationDocumentsDirectory();
       final dbPath = '${docsDir.path}/$walletName.db';
-      
+
       // Check if wallet exists
       if (!File(dbPath).existsSync()) {
-        _showSnackBar('Wallet not found. Please create or import a wallet first.');
+        _showSnackBar(
+            'Wallet not found. Please create or import a wallet first.');
         setState(() => _isLoading = false);
         return;
       }
-      
+
       setState(() {
         _walletPath = dbPath;
         _walletOpen = true;
@@ -84,7 +85,7 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
         dbPath: _walletPath!,
         rawKey: walletKey,
       );
-      
+
       if (result['success'] == true) {
         final entries = result['entries'] as List<dynamic>? ?? [];
         // Filter to only credential entries
@@ -92,7 +93,7 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
             .where((e) => e['category'] == 'credential')
             .map((e) => e as Map<String, dynamic>)
             .toList();
-        
+
         setState(() {
           _credentials = credEntries;
           _verificationResults.clear();
@@ -107,18 +108,20 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
     }
   }
 
-  Future<void> _verifyCredential(String credentialId, Map<String, dynamic> credential) async {
+  Future<void> _verifyCredential(
+      String credentialId, Map<String, dynamic> credential) async {
     if (_walletPath == null) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final enhancedService = Provider.of<EnhancedVerificationService>(context, listen: false);
-      
+      final enhancedService =
+          Provider.of<EnhancedVerificationService>(context, listen: false);
+
       // Get the credential value
       final credValue = credential['value'];
       Map<String, dynamic> credentialData;
-      
+
       if (credValue is String) {
         credentialData = jsonDecode(credValue) as Map<String, dynamic>;
       } else if (credValue is Map) {
@@ -127,14 +130,14 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
         _showSnackBar('Invalid credential format');
         return;
       }
-      
+
       // Run enhanced verification
       final result = await enhancedService.verifyCredential(credentialData);
-      
+
       setState(() {
         _verificationResults[credentialId] = result;
       });
-      
+
       _showSnackBar('Verification complete: ${result.tier}');
     } catch (e) {
       _showSnackBar('Error verifying credential: $e');
@@ -259,7 +262,7 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
     // Parse credential data
     final name = credential['name'] as String? ?? 'Unknown';
     final category = credential['category'] as String? ?? 'credential';
-    
+
     // Try to extract credential attributes for display
     Map<String, dynamic>? attributes;
     try {
@@ -293,9 +296,10 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
                     children: [
                       Text(
                         name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       Text(
                         category,
@@ -308,13 +312,13 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
                 ),
               ],
             ),
-            
+
             // Show verification result if available
             if (verificationResult != null) ...[
               const SizedBox(height: 16),
               _buildVerificationResult(verificationResult),
             ],
-            
+
             // Show some attributes if available
             if (attributes != null && attributes.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -330,9 +334,10 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
                         width: 100,
                         child: Text(
                           '${entry.key}:',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
                         ),
                       ),
                       Expanded(
@@ -346,9 +351,9 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
                 );
               }).toList(),
             ],
-            
+
             const SizedBox(height: 16),
-            
+
             // Verify button
             SizedBox(
               width: double.infinity,
@@ -368,9 +373,10 @@ class _VerifyLocalPageState extends State<VerifyLocalPage> {
 
   Widget _buildVerificationResult(EnhancedVerificationResult result) {
     // Parse hex color string to Color
-    final colorValue = int.parse(result.tierColor.replaceFirst('#', ''), radix: 16);
+    final colorValue =
+        int.parse(result.tierColor.replaceFirst('#', ''), radix: 16);
     final color = Color(0xFF000000 | colorValue);
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

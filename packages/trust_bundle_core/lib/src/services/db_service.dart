@@ -27,4 +27,14 @@ class DbService {
       return null;
     }
   }
+
+  /// Clear all trust bundle data (bundles, schemas, cred defs)
+  Future<void> clearAllTrustBundleData() async {
+    await isar.writeTxn(() async {
+      await isar.bundleRecs.clear();
+      await isar.schemaRecs.clear();
+      await isar.credDefRecs.clear();
+    });
+    print('🗑️ Cleared all trust bundle data');
+  }
 }

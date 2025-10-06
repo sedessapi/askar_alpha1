@@ -154,9 +154,23 @@ class TrustBundleProvider with ChangeNotifier {
     _previewError = null;
     _rawBundle = null;
     _isHealthy = null;
-    _progressMessage = 'Downloading bundle...';
+    _progressMessage = 'Clearing old data...';
     _progressValue = 0.0;
     notifyListeners();
+
+    try {
+      // Clear all existing trust bundle data before syncing new bundle
+      await _dbService.clearAllTrustBundleData();
+      _progressMessage = 'Downloading bundle...';
+      notifyListeners();
+    } catch (e) {
+      _progressMessage = 'Error clearing data: $e';
+      _isHealthy = false;
+      _isLoading = false;
+      _previewError = e.toString();
+      notifyListeners();
+      return;
+    }
 
     await _ingestionSubscription?.cancel();
     _ingestionSubscription = _ingestionService.ingestBundle().listen(

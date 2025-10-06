@@ -7,7 +7,7 @@ class BundleClient {
 
   BundleClient({http.Client? client, String? baseUrl})
     : _client = client ?? http.Client(),
-      _baseUrl = baseUrl ?? 'http://mary9.com:9090';
+      _baseUrl = baseUrl ?? 'http://mary4.com:9090';
 
   String get baseUrl => _baseUrl;
 
